@@ -1,11 +1,33 @@
+// Serial library
 #include <SPI.h>
+
+// Wifi Library
 #include <WiFiNINA.h>
+
+// BME280
+#include <Adafruit_Sensor.h>
+#include <Adafruit_BME280.h>
+
+Adafruit_BME280 bme; //I2C
+
+// Own libraries
 #include "secrets.h"
 #include "functions.h"
 
+// Wifi related variables
 char wifi_ssid[]  = SECRET_WIFI_SSID;
 char wifi_pass[]  = SECRET_WIFI_PASS;
 int status        = WL_IDLE_STATUS;     // the Wifi radio's status
+
+// MySQL related variables
+IPAddress mysql_host(192, 168, 148, 106);
+int mysql_port = SECRET_MYSQL_PORT;
+char mysql_user[] = SECRET_MYSQL_USER;
+char mysql_pass[] = SECRET_MYSQL_PASS;
+char mysql_dbp[]  = SECRET_MYSQL_DB;
+
+// Sensor name
+char sensor_name[] = "home_weather_station";
 
 void setup() {  
   // put your setup code here, to run once:
@@ -44,11 +66,41 @@ void setup() {
   Serial.print("You're connected to the network");
   printCurrentNet();
   printWifiData();
+
+  Serial.println("Trying to initialize the bme...");
+  if (!bme.begin()) {  
+    Serial.println("Could not find a valid BME280 sensor, check wiring!");
+    while (1);
+  }
+  Serial.println("BME initiated");
+
+  // initialize digital pin LED_BUILTIN as an output.
+  pinMode(LED_BUILTIN, OUTPUT);
 }
 
 void loop() {
-  // put your main code here, to run repeatedly:
-  // check the network connection once every 10 seconds:
+  float temp;
+  int pres;
+  float hum;
+  String res;
+  
+  // Act every 10s
   delay(10000);
+  
+  // Turn builtin led on while it's working.
+  digitalWrite(LED_BUILTIN, HIGH);
+
+  // Read from sensor
+  temp = bme.readTemperature();
+  pres = bme.readPressure();
+  hum = bme.readHumidity();
+  res = "Temperature: ";
+  res = res + temp + "; Pressure: " + pres + "; Humdity: " + hum;
+  Serial.println(res);
+
+  // Write to MySQL
+  
   printCurrentNet();
+
+  digitalWrite(LED_BUILTIN, LOW);
 }
