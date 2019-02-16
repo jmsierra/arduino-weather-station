@@ -10,6 +10,10 @@
 
 Adafruit_BME280 bme; //I2C
 
+// MySQL libraries
+#include <MySQL_Connection.h>
+#include <MySQL_Cursor.h>
+
 // Own libraries
 #include "secrets.h"
 #include "functions.h"
@@ -22,17 +26,19 @@ int status        = WL_IDLE_STATUS;     // the Wifi radio's status
 // MySQL related variables
 IPAddress mysql_host(192, 168, 148, 106);
 int mysql_port = SECRET_MYSQL_PORT;
-char mysql_user[] = SECRET_MYSQL_USER;
-char mysql_pass[] = SECRET_MYSQL_PASS;
-char mysql_dbp[]  = SECRET_MYSQL_DB;
+char * mysql_user = SECRET_MYSQL_USER;
+char * mysql_pass = SECRET_MYSQL_PASS;
+char * mysql_dbp  = SECRET_MYSQL_DB;
+WiFiClient client;
+MySQL_Connection conn((Client *)&client);
 
 // Sensor name
 char sensor_name[] = "home_weather_station";
 
-void setup() {  
+void setup() {
   // put your setup code here, to run once:
   Serial.begin(9600);
-  
+
   while (!Serial) {
     ; // wait for serial port to connect. Needed for native USB port only
   }
@@ -68,10 +74,19 @@ void setup() {
   printWifiData();
 
   Serial.println("Trying to initialize the bme...");
-  if (!bme.begin()) {  
+  if (!bme.begin()) {
     Serial.println("Could not find a valid BME280 sensor, check wiring!");
     while (1);
   }
+  // weather monitoring
+  Serial.println("-- Weather Station Scenario --");
+  Serial.println("forced mode, 1x temperature / 1x humidity / 1x pressure oversampling,");
+  Serial.println("filter off");
+  bme.setSampling(Adafruit_BME280::MODE_FORCED,
+                  Adafruit_BME280::SAMPLING_X1, // temperature
+                  Adafruit_BME280::SAMPLING_X1, // pressure
+                  Adafruit_BME280::SAMPLING_X1, // humidity
+                  Adafruit_BME280::FILTER_OFF   );
   Serial.println("BME initiated");
 
   // initialize digital pin LED_BUILTIN as an output.
@@ -83,23 +98,42 @@ void loop() {
   int pres;
   float hum;
   String res;
-  
-  // Act every 10s
-  delay(10000);
-  
+  String msg;
+
+  // Act every 30s
+  delay(30000);
+
   // Turn builtin led on while it's working.
   digitalWrite(LED_BUILTIN, HIGH);
 
+  // Check if MySQL connection is alive and connect if not
+  if (!conn.connected()) {
+    // Try to connect
+    Serial.println("MySQL connection is dead");
+    msg = "Connecting to MySQL...";
+    msg = msg + mysql_user + "/...@" + mysql_host[0] + "." + mysql_host[1] + "." + mysql_host[2] + "." + mysql_host[3] + ":" + mysql_port;
+    Serial.println(msg);
+
+    if (!conn.connect(mysql_host, mysql_port, mysql_user, mysql_pass)) {
+      Serial.println("MySQL connection failed");
+      return;
+    }
+    Serial.println("MySQL connection established");
+  }
+
   // Read from sensor
   temp = bme.readTemperature();
-  pres = bme.readPressure();
+  pres = bme.readPressure() / 100.0F; //hPa
   hum = bme.readHumidity();
   res = "Temperature: ";
   res = res + temp + "; Pressure: " + pres + "; Humdity: " + hum;
   Serial.println(res);
 
   // Write to MySQL
-  
+  sendDatatoMySQL(conn, "Temperature", temp, "C");
+  sendDatatoMySQL(conn, "Humidity", hum, "%");
+  sendDatatoMySQL(conn, "Pressure", pres, "hPa");
+
   printCurrentNet();
 
   digitalWrite(LED_BUILTIN, LOW);

@@ -71,27 +71,14 @@ void printMacAddress(byte mac[]) {
   Serial.println();
 }
 
-
-boolean sendDatatoMySQL(char measure[], float value, char units[]){
+boolean sendDatatoMySQL(MySQL_Connection conn, char measure[], float value, char units[]){
   // Variables:
-  char INSERT_SQL[] = "insert into home_sensors.sensors (sensor_name, sensor_measure, sensor_unit, sensor_value, datetime) values ('%s', '%s', %f, '%s', now())";
+  char INSERT_SQL[] = "insert into home_sensors.sensor_data (sensor_name, sensor_measure, sensor_unit, sensor_value, datetime) values ('%s', '%s', '%s', %f, now())";
   char query[100]; 
   boolean result;
-  
-  // Open connection
-  EthernetClient client;
-  MySQL_Connection conn((Client *)&client);
-
-  Serial.println("Connecting to MySQL...");
-  if(!conn.connect(mysql_host, mysql_port, mysql_user, mysql_pass)){
-    Serial.println("MySQL connection failed");
-    return false;
-  }
-
-  Serial.println("MySQL connection established");
 
   // Send the query:
-  sprintf(query, INSERT_SQL, SECRET_MYSQL_USER, measure, value, units);
+  sprintf(query, INSERT_SQL, SECRET_MYSQL_USER, measure, units, value);
   Serial.println("Executing insert query");
   MySQL_Cursor *cur_mem = new MySQL_Cursor(&conn);
   result = cur_mem->execute(query);
@@ -99,15 +86,12 @@ boolean sendDatatoMySQL(char measure[], float value, char units[]){
   // Free up memory
   delete cur_mem;
 
-  if(result){
+  if(result == 0){
     Serial.println("Query executed successfully");
   } else {
     Serial.println("Query wasn't executed successfully");
     Serial.println(query);
   }
-
-  // Close connection
-  conn.close();
-
+  
   return result;
 }
