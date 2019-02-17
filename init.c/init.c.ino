@@ -122,6 +122,7 @@ void loop() {
   }
 
   // Read from sensor
+  bme.takeForcedMeasurement(); 
   temp = bme.readTemperature();
   pres = bme.readPressure() / 100.0F; //hPa
   hum = bme.readHumidity();
@@ -136,5 +137,16 @@ void loop() {
 
   printCurrentNet();
 
+  // Check battery:
+  // https://www.hackster.io/Arduino_Genuino/mkr-zero-read-battery-voltage-4853ac
+  // read the input on analog pin 0:
+  int sensorValue = analogRead(ADC_BATTERY);
+  // Convert the analog reading (which goes from 0 - 1023) to a voltage (0 - 4.3V):
+  float voltage = sensorValue * (4.3 / 1023.0);
+  // print out the value you read:
+  Serial.print(voltage);
+  Serial.println("V");
+
+  // Switch off LED
   digitalWrite(LED_BUILTIN, LOW);
 }
