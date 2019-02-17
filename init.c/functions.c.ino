@@ -95,3 +95,29 @@ boolean sendDatatoMySQL(MySQL_Connection conn, char measure[], float value, char
   
   return result;
 }
+
+boolean sendDatatoMySQL(MySQL_Connection conn, float temp_value, float hum_value, float press_value){
+  // Variables:
+  char INSERT_SQL[] = "insert into home_sensors.sensor_data (sensor_name, sensor_measure, sensor_unit, sensor_value, datetime) values ('%s', '%s', '%s', %f, now()), ('%s', '%s', '%s', %f, now()), ('%s', '%s', '%s', %f, now())";
+  char query[100]; 
+  boolean result;
+
+  // Send the query:
+  sprintf(query, INSERT_SQL, SECRET_MYSQL_USER, "Temperature", "C", temp_value, 
+    SECRET_MYSQL_USER, "Humidity", "%", hum_value, 
+    SECRET_MYSQL_USER, "Pressure", "hPa", press_value);
+  MySQL_Cursor *cur_mem = new MySQL_Cursor(&conn);
+  result = cur_mem->execute(query);
+
+  // Free up memory
+  delete cur_mem;
+
+  if(result == 0){
+    Serial.println("Insert query executed successfully");
+    return true;
+  } else {
+    Serial.println("Insert query wasn't executed successfully");
+    Serial.println(query);
+    return false;
+  }
+}

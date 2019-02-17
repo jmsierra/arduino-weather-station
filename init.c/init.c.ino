@@ -95,7 +95,7 @@ void setup() {
 
 void loop() {
   float temp;
-  int pres;
+  float pres;
   float hum;
   String res;
   String msg;
@@ -131,9 +131,10 @@ void loop() {
   Serial.println(res);
 
   // Write to MySQL
-  sendDatatoMySQL(conn, "Temperature", temp, "C");
-  sendDatatoMySQL(conn, "Humidity", hum, "%");
-  sendDatatoMySQL(conn, "Pressure", pres, "hPa");
+  //sendDatatoMySQL(conn, "Temperature", temp, "C");
+  //sendDatatoMySQL(conn, "Humidity", hum, "%");
+  //sendDatatoMySQL(conn, "Pressure", pres, "hPa");
+  sendDatatoMySQL(conn, temp, hum, pres);
 
   printCurrentNet();
 
