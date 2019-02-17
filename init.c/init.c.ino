@@ -39,9 +39,9 @@ void setup() {
   // put your setup code here, to run once:
   Serial.begin(9600);
 
-  while (!Serial) {
-    ; // wait for serial port to connect. Needed for native USB port only
-  }
+  //while (!Serial) {
+  //  ; // wait for serial port to connect. Needed for native USB port only
+  //}
 
   Serial.println("Serial connection established");
 
